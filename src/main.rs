@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::io;
 use std::process;
+use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +14,15 @@ struct Task {
     client: String,
     isDone: bool,
 } 
+
+impl fmt::Display for Task{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.isDone {
+            true  => write!(f, "☑ {} ({})", self.title, self.client),
+            false => write!(f, "  {} ({})", self.title, self.client),
+        }
+    }
+}
 
 
 fn create_task_list(path: PathBuf) -> Result<Vec<Task>, Box<dyn Error>> {
@@ -38,7 +48,7 @@ fn serialize_task_list(path: PathBuf, lst_task: &Vec<Task>) -> Result<(), Box<dy
 
 fn check_list(lst_task: &Vec<Task>) -> Result<(), Box<dyn Error>> {
     for task in lst_task {
-        println!("{:?}", task);
+        println!("{}", task);
     }
 
     Ok(())
@@ -67,7 +77,7 @@ fn create_new_task() -> Task {
         .expect("msg: &str");
 
     Task {
-        title : title.trim().to_string(), 
+        title : title.trim().to_string(),
         client: client.trim().to_string(),
         isDone: false
     }

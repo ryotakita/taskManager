@@ -2,6 +2,7 @@
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::env;
 use task_manager::logic::taskView;
 use task_manager::logic::addTaskView;
 use task_manager::logic::functions;
@@ -126,7 +127,9 @@ pub fn buffer_size() -> Result<(u16, u16)> {
 }
 
 fn main() -> Result<()> {
+    env::set_current_dir(env::current_exe().unwrap().parent().unwrap())?;
+
     let mut stdout = io::stdout();
-    check_pass(&mut stdout);
+    check_pass(&mut stdout)?;
     run(&mut stdout)
 }

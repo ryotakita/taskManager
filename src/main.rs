@@ -1,123 +1,132 @@
-use std::error::Error;
-use std::fs::File;
-use std::io::prelude::*;
+#![allow(clippy::cognitive_complexity)]
+
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::io;
-use std::process;
-use std::fmt;
+use task_manager::logic::taskView;
+use task_manager::logic::addTaskView;
+use task_manager::logic::functions;
 
-use chrono::prelude::*;
-use serde::{Deserialize, Serialize};
+pub use crossterm::{
+    cursor,
+    event::{self, Event, KeyCode, KeyEvent},
+    execute, queue, style,
+    terminal::{self, ClearType},
+    Command, Result,
+};
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-struct Task {
-    title: String,
-    client: String,
-    date  : String,
-    isDone: bool,
-} 
+const MENU: &str = r#"TaskManager Ver1.0.0.0
 
-impl fmt::Display for Task{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.isDone {
-            true  => write!(f, "☑ {} ({})  - by {}", self.title, self.client, self.date),
-            false => write!(f, "  {} ({}) - by {}", self.title, self.client, self.date),
-        }
-    }
-}
+Controls:
 
-fn create_task_list(path: PathBuf) -> Result<Vec<Task>, Box<dyn Error>> {
-    let mut rdr = csv::Reader::from_path(path);
-    let mut vec_task: Vec<Task> = [].to_vec();
-    for result in rdr.unwrap().deserialize() {
-        let task: Task = result?;
-        vec_task.push(task);
-    }
+ - 'q' - quit interactive test (or return to this menu)
+ - any other key - continue with next step
 
-    Ok(vec_task)
-}
+Available tests:
 
-fn serialize_task_list(path: PathBuf, lst_task: &Vec<Task>) -> Result<(), Box<dyn Error>> {
-    let mut wtr = csv::Writer::from_path(path).unwrap();
-    for task in lst_task {
-        wtr.serialize(task)?;
-    }
-    wtr.flush()?;
+1. View TaskLists
+2. AddTasks
+3. None
+4. None
 
-    Ok(())
-}
+Select command to run ('1', '2', ...) or hit 'q' to quit.
+"#;
 
-fn check_list(lst_task: &Vec<Task>) -> Result<(), Box<dyn Error>> {
-    for task in lst_task {
-        println!("{}", task);
-    }
+fn run<W>(w: &mut W) -> Result<()>
+where
+    W: Write,
+{
+    execute!(w, terminal::EnterAlternateScreen)?;
 
-    Ok(())
-}
+    terminal::enable_raw_mode()?;
 
-fn add_list(lst_task: &Vec<Task>, task_add: Task, path: PathBuf) -> Vec<Task> {
-    let mut lst_task_new = lst_task.clone();
-    lst_task_new.push(task_add);
-    serialize_task_list(path, &lst_task_new).unwrap();
-
-
-    lst_task_new
-}
-
-fn create_new_task() -> Result<Task, Box<dyn Error>> {
-    let mut title = String::new();
-    println!("input title...");
-    io::stdin()
-        .read_line(&mut title)
-        .expect("msg: &str");
-
-    let mut client = String::new();
-    println!("input client...");
-    io::stdin()
-        .read_line(&mut client)
-        .expect("msg: &str");
-
-    let mut date = String::new();
-    println!("input date...");
-    io::stdin()
-        .read_line(&mut date)
-        .expect("msg: &str");
-
-    let date_year: i32 = date[0..2].to_string().parse()?;
-    let date_month: u32 = date[2..4].to_string().parse()?;
-    let date_day: u32 = date[4..6].to_string().parse()?;
-
-    let date_chrono = Utc.ymd(2000 + date_year, date_month, date_day);
-    println!("{:?}", date_chrono);
-
-    Ok(Task {
-        title : title.trim().to_string(),
-        client: client.trim().to_string(),
-        date  : date_chrono.to_string(),
-        isDone: false
-    })
-}
-
-
-fn main() {
     let path = Path::new("test.txt");
-    let display = path.display();
 
-    let mut lst_task = create_task_list(path.to_path_buf()).unwrap();
+    let list = 
 
-    let mut mode = String::new();
     loop {
-        mode = "".to_string();
-        println!("SelectMode");
+        queue!(
+            w,
+            style::ResetColor,
+            terminal::Clear(ClearType::All),
+            cursor::Show,
+            cursor::MoveTo(0, 0)
+        )?;
+
+        for line in MENU.split('\n') {
+            queue!(w, style::Print(line), cursor::MoveToNextLine(1))?;
+        }
+
+        w.flush()?;
+
+        match functions::read_char().unwrap() {
+            '1' => taskView::run(w).unwrap(),
+            '2' => addTaskView::run(w).unwrap(),
+            'q' => break,
+            _ => {}
+        };
+    };
+
+    execute!(
+        w,
+        style::ResetColor,
+        cursor::Show,
+        terminal::LeaveAlternateScreen
+    )?;
+
+    terminal::disable_raw_mode()
+}
+
+fn check_pass<W>(w: &mut W) -> Result<()>
+where
+    W: Write,
+{
+    execute!(w, terminal::EnterAlternateScreen)?;
+
+    //terminal::enable_raw_mode()?;
+
+    loop {
+        queue!(
+            w,
+            style::ResetColor,
+            terminal::Clear(ClearType::All),
+            cursor::Show,
+            cursor::MoveTo(1, 1)
+        )?;
+
+        execute!(w,
+            style::Print("Input Your PassCode."),
+            cursor::MoveToNextLine(1),
+        )?;
+
+        let mut pass = String::new();
         io::stdin()
-            .read_line(&mut mode)
+            .read_line(&mut pass)
             .expect("msg: &str");
 
-        match mode.trim() {
-            "1" => check_list(&lst_task).expect("sorry"),
-            "2" => lst_task = add_list(&lst_task, create_new_task().unwrap(), path.to_path_buf()),
-            _   => println!("Your Input Number Is {}. This is Invalid", mode.trim())
+        if pass.trim() == "pass" {
+            break;
         }
+
+        w.flush()?;
     }
+
+
+    execute!(
+        w,
+        style::ResetColor,
+        cursor::Show,
+        terminal::LeaveAlternateScreen
+    )?;
+
+    terminal::disable_raw_mode()
 }
 
+pub fn buffer_size() -> Result<(u16, u16)> {
+    terminal::size()
+}
+
+fn main() -> Result<()> {
+    let mut stdout = io::stdout();
+    check_pass(&mut stdout);
+    run(&mut stdout)
+}

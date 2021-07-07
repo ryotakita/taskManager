@@ -30,8 +30,8 @@ pub struct Task {
 impl fmt::Display for Task{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.isDone {
-            true  => write!(f, "☑ {} ({})  - by {}", self.title, self.client, self.date),
-            false => write!(f, "  {} ({}) - by {}", self.title, self.client, self.date),
+            true  => write!(f, "☑ {:<20} | {:^8} | {:>8}", self.title, self.client, self.date),
+            false => write!(f, "  {:<20} | {:^8} | {:>8}", self.title, self.client, self.date),
         }
     }
 }

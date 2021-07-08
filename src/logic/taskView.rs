@@ -17,7 +17,7 @@ pub use crossterm::{
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::functions::*;
+use super::functions;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Task {
@@ -68,7 +68,7 @@ impl fmt::Display for Task{
     }
 }
 
-pub fn create_task_list(path: PathBuf) -> Result<Vec<Task>> {
+pub fn create_task_list(path: PathBuf) -> Result<Vec<Task>, Box<dyn Error>> {
     let mut rdr = csv::Reader::from_path(path);
     let mut vec_task: Vec<Task> = [].to_vec();
     for result in rdr.unwrap().deserialize() {
@@ -79,7 +79,7 @@ pub fn create_task_list(path: PathBuf) -> Result<Vec<Task>> {
     Ok(vec_task)
 }
 
-fn serialize_task_list(path: PathBuf, lst_task: &Vec<Task>) -> Result<()> {
+fn serialize_task_list(path: PathBuf, lst_task: &Vec<Task>) -> Result<(), Box<dyn Error>> {
     let mut wtr = csv::Writer::from_path(path).unwrap();
     for task in lst_task {
         wtr.serialize(task);
@@ -89,7 +89,7 @@ fn serialize_task_list(path: PathBuf, lst_task: &Vec<Task>) -> Result<()> {
     Ok(())
 }
 
-fn check_list(lst_task: &Vec<Task>) -> Result<()> {
+fn check_list(lst_task: &Vec<Task>) -> Result<(), Box<dyn Error>> {
     for task in lst_task {
         println!("{}", task);
     }
@@ -106,7 +106,7 @@ fn add_list(lst_task: &Vec<Task>, task_add: Task, path: PathBuf) -> Vec<Task> {
     lst_task_new
 }
 
-fn create_new_task() -> Result<Task> {
+fn create_new_task() -> Result<Task, Box<dyn Error>> {
     let mut title = String::new();
     println!("input title...");
     io::stdin()
@@ -140,7 +140,7 @@ fn create_new_task() -> Result<Task> {
     })
 }
 
-pub fn run<W>(w: &mut W) -> Result<()>
+pub fn run<W>(w: &mut W) -> Result<(), Box<dyn Error>>
 where
     W: Write,
 {
@@ -168,7 +168,8 @@ where
 
         w.flush();
 
-        match read_char().unwrap() {
+        match functions::read_char().unwrap() {
+            'j' => functions::draw_cursor_box(w, "Move Left (2)", |_, _| cursor::MoveLeft(2))?,
             'q' => break,
             _ => {},
         };

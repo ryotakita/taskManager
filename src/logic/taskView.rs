@@ -12,6 +12,7 @@ pub use crossterm::{
     execute, queue, style,
     terminal::{self, ClearType},
     Command, 
+    style::Stylize
 };
 
 use chrono::prelude::*;
@@ -153,23 +154,40 @@ where
 
     //terminal::enable_raw_mode()?;
 
+    let mut bIsFirst = true;
+
     loop {
         queue!(
             w,
             style::ResetColor,
             terminal::Clear(ClearType::All),
-            cursor::Show,
-            cursor::MoveTo(0, 0)
+            cursor::Hide,
+            style::PrintStyledContent("████████████".red()),
+            cursor::MoveTo(0,0),
         );
 
+
         for task in &lst_task{
-            queue!(w, style::Print(task), cursor::MoveToNextLine(1));
+            queue!(w,
+                   style::Print(task), 
+                   cursor::MoveToNextLine(1),
+            );
         }
 
-        w.flush();
+        // 初回だけflushする
+        if bIsFirst { w.flush(); bIsFirst = false; }
+
+        queue!(
+            w,
+            cursor::RestorePosition,
+            cursor::MoveLeft(2)
+        );
+
 
         match functions::read_char().unwrap() {
-            'j' => functions::draw_cursor_box(w, "Move Left (2)", |_, _| cursor::MoveLeft(2))?,
+            'j' => functions::draw_cursor_box(w, "Move Left (2)", |_, _| cursor::MoveDown(1))?,
+            'k' => functions::draw_cursor_box(w, "Move Left (2)", |_, _| cursor::MoveUp(1))?,
+            'c' => lst_task[cursor::position().unwrap().1 as usize].isDone = !lst_task[cursor::position().unwrap().1 as usize].isDone,
             'q' => break,
             _ => {},
         };

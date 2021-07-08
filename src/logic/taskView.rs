@@ -166,7 +166,6 @@ where
             cursor::MoveTo(0,0),
         );
 
-
         for task in &lst_task{
             queue!(w,
                    style::Print(task), 
@@ -202,6 +201,8 @@ where
     );
 
     terminal::disable_raw_mode();
+
+    serialize_task_list(path.to_path_buf(), &lst_task);
 
     Ok(())
 }

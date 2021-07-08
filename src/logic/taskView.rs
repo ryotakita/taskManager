@@ -27,11 +27,43 @@ pub struct Task {
     isDone: bool,
 } 
 
+impl Task {
+    fn get_title_length(&self) -> u32 {
+        self.title.chars().fold(0, |x, y: char| if y.len_utf8() > 1 {x+2} else {x+1})
+    }
+
+    fn get_client_length(&self) -> u32 {
+        self.client.chars().fold(0, |x, y: char| if y.len_utf8() > 1 {x+2} else {x+1})
+    }
+
+    fn get_date_length(&self) -> u32 {
+        self.date.chars().fold(0, |x, y: char| if y.len_utf8() > 1 {x+2} else {x+1})
+    }
+
+    fn get_filled_space(&self, x: u32, str_now: &String) -> String {
+        let mut space = String::new();
+        for i in 1..x+1 {
+            space = space + " ";
+        }
+        str_now.clone() + &space
+    }
+}
+
+
 impl fmt::Display for Task{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let title_length = 20;
+        let client_length = 8;
+        let date_length = 30;
+
         match self.isDone {
-            true  => write!(f, "☑ {:<20} | {:^8} | {:>8}", self.title, self.client, self.date),
-            false => write!(f, "  {:<20} | {:^8} | {:>8}", self.title, self.client, self.date),
+            true  => write!(f, "☑ {} | {} | {}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
+                                                         , self.get_filled_space(client_length - self.get_client_length(), &self.client)
+                                                         , self.get_filled_space(date_length - self.get_date_length(), &self.date)),
+
+            false => write!(f, "  {} | {} | {}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
+                                                         , self.get_filled_space(client_length - self.get_client_length(), &self.client)
+                                                         , self.get_filled_space(date_length - self.get_date_length(), &self.date))
         }
     }
 }
@@ -127,7 +159,7 @@ where
             style::ResetColor,
             terminal::Clear(ClearType::All),
             cursor::Show,
-            cursor::MoveTo(1, 1)
+            cursor::MoveTo(0, 0)
         );
 
         for task in &lst_task{

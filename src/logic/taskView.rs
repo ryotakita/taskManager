@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::io;
 use std::process;
 use std::fmt;
+use chrono::{Utc, Local, Date, Duration};
 
 pub use crossterm::{
     cursor,
@@ -48,6 +49,14 @@ impl Task {
         }
         str_now.clone() + &space
     }
+
+    fn get_bar_date(&self, x: i64, c: &str) -> String {
+        let mut bar = String::new();
+        for i in 1..x+1 {
+            bar = bar + c;
+        }
+        bar
+    }
 }
 
 
@@ -57,14 +66,26 @@ impl fmt::Display for Task{
         let client_length = 8;
         let date_length = 30;
 
-        match self.isDone {
-            true  => write!(f, "☑ {} | {} | {}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
-                                                         , self.get_filled_space(client_length - self.get_client_length(), &self.client)
-                                                         , self.get_filled_space(date_length - self.get_date_length(), &self.date)),
+        let today: Date<Local> = Local::now().date();
+        let limit = NaiveDate::parse_from_str(&self.date, "%Y-%m-%dUTC").unwrap();
 
-            false => write!(f, "  {} | {} | {}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
+        let duration_above = limit - today.naive_local();
+        let duration_negative = today.naive_local() - limit;
+
+        match self.isDone {
+            true  => write!(f, "✔ {} | {} | {} {:>20}{:<20}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
                                                          , self.get_filled_space(client_length - self.get_client_length(), &self.client)
-                                                         , self.get_filled_space(date_length - self.get_date_length(), &self.date))
+                                                         , self.get_filled_space(date_length - self.get_date_length(), &self.date)
+                                                         , self.get_bar_date(duration_above.num_days(), "□")
+                                                         , self.get_bar_date(duration_negative.num_days(), "■")
+                                                        ),
+
+            false => write!(f, "  {} | {} | {} {:>20}{:<20}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
+                                                         , self.get_filled_space(client_length - self.get_client_length(), &self.client)
+                                                         , self.get_filled_space(date_length - self.get_date_length(), &self.date)
+                                                         , self.get_bar_date(duration_above.num_days(), "□")
+                                                         , self.get_bar_date(duration_negative.num_days(), "■")
+                                                        )
         }
     }
 }

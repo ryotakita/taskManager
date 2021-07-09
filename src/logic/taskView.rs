@@ -50,10 +50,29 @@ impl Task {
         str_now.clone() + &space
     }
 
-    fn get_bar_date(&self, x: i64, c: &str) -> String {
+    fn get_bar_date(&self, x: i64) -> String {
         let mut bar = String::new();
-        for i in 1..x+1 {
-            bar = bar + c;
+        // dont over limit
+        if x < 0 {
+            for i in 1..10 {
+                bar = bar + "  ";
+            }
+            for i in 0..-(x) {
+                bar = bar + "■";
+            }
+        }
+        else if x > 0{
+            for i in 1..10-(x+1) {
+                bar = bar + "  ";
+            }
+            for i in 0..x+1 {
+                bar = bar + "□";
+            }
+        }
+        else {
+            for i in 1..10 {
+                bar = bar + "  ";
+            }
         }
         bar
     }
@@ -62,29 +81,26 @@ impl Task {
 
 impl fmt::Display for Task{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let title_length = 20;
+        let title_length = 30;
         let client_length = 8;
         let date_length = 30;
 
         let today: Date<Local> = Local::now().date();
         let limit = NaiveDate::parse_from_str(&self.date, "%Y-%m-%dUTC").unwrap();
 
-        let duration_above = limit - today.naive_local();
-        let duration_negative = today.naive_local() - limit;
+        let duration = limit - today.naive_local();
 
         match self.isDone {
-            true  => write!(f, "✔ {} | {} | {} {:>20}{:<20}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
+            true  => write!(f, "✔ {} | {} | {} {}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
                                                          , self.get_filled_space(client_length - self.get_client_length(), &self.client)
                                                          , self.get_filled_space(date_length - self.get_date_length(), &self.date)
-                                                         , self.get_bar_date(duration_above.num_days(), "□")
-                                                         , self.get_bar_date(duration_negative.num_days(), "■")
+                                                         , self.get_bar_date(duration.num_days())
                                                         ),
 
-            false => write!(f, "  {} | {} | {} {:>20}{:<20}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
+            false => write!(f, "  {} | {} | {} {}", self.get_filled_space(title_length - self.get_title_length(), &self.title)
                                                          , self.get_filled_space(client_length - self.get_client_length(), &self.client)
                                                          , self.get_filled_space(date_length - self.get_date_length(), &self.date)
-                                                         , self.get_bar_date(duration_above.num_days(), "□")
-                                                         , self.get_bar_date(duration_negative.num_days(), "■")
+                                                         , self.get_bar_date(duration.num_days())
                                                         )
         }
     }
@@ -191,7 +207,7 @@ where
         for task in &lst_task{
             queue!(w,
                    style::Print(task), 
-                   cursor::MoveToNextLine(1),
+                   cursor::MoveToNextLine(0),
             );
         }
 

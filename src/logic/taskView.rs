@@ -170,6 +170,7 @@ where
     let display = path.display();
 
     let mut lst_task = create_task_list(path.to_path_buf()).unwrap();
+    lst_task.sort_by(|a, b| a.date.cmp(&b.date));
 
     execute!(w, terminal::EnterAlternateScreen);
 
